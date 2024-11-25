@@ -125,15 +125,17 @@ def delete_movie():
 def add_movie():
 
     add_form = MovieAddForm()
+    movie_list = []
     if add_form.validate_on_submit():
         movie_api_key = os.getenv('movie_db_api_key')
         params = {
             "api_key" : movie_api_key,
-            "query" : "Star Wars"
+            "query" : add_form.title.data
         }
-        response = requests.get(url=MOVIE_DB_URL, params=params)
+        response = requests.get(url=MOVIE_DB_URL, params=params).json()
 
-        print(response.text)
+        movie_list = response['results']
+        return  render_template('select.html', list=movie_list)
     return render_template('add.html', form=add_form)
 
 if __name__ == '__main__':
