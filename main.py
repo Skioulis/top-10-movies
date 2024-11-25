@@ -1,4 +1,5 @@
-# from crypt import methods
+from symbol import parameters
+
 from flask import Flask, render_template, redirect, url_for, request
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
@@ -8,6 +9,14 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import requests
+from forms import MovieEditForm, MovieAddForm
+import os
+from dotenv import load_dotenv
+
+load_dotenv(".env")
+MOVIE_DB_URL = "https://api.themoviedb.org/3/search/movie"
+
+
 
 '''
 Red underlines? Install the required packages first: 
@@ -49,11 +58,7 @@ class Movie(db.Model):
 with app.app_context():
     db.create_all()
 
-class MovieForm(FlaskForm):
 
-    rating = StringField("Your rating our of 10 e.g. 7.2 ", validators=[DataRequired()])
-    review = StringField("Your review", validators=[DataRequired()])
-    submit = SubmitField("Done")
 
 # new_movie = Movie(
 #     title="Phone Booth",
@@ -95,7 +100,7 @@ def home():
 def edit():
     movie_id = request.args.get('id')
     movie_selected = db.get_or_404(Movie, movie_id)
-    edit_form = MovieForm()
+    edit_form = MovieEditForm()
 
     if edit_form.validate_on_submit():
         # print(edit_form.review.data)
@@ -115,6 +120,21 @@ def delete_movie():
     db.session.delete(movie_selected)
     db.session.commit()
     return redirect(url_for('home'))
+
+@app.route("/add", methods=["GET", "POST"])
+def add_movie():
+
+    add_form = MovieAddForm()
+    if add_form.validate_on_submit():
+        movie_api_key = os.getenv('movie_db_api_key')
+        params = {
+            "api_key" : movie_api_key,
+            "query" : "Star Wars"
+        }
+        response = requests.get(url=MOVIE_DB_URL, params=params)
+
+        print(response.text)
+    return render_template('add.html', form=add_form)
 
 if __name__ == '__main__':
     app.run(debug=True)
