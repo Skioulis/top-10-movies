@@ -1,3 +1,4 @@
+# from crypt import methods
 from flask import Flask, render_template, redirect, url_for, request
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
@@ -48,6 +49,12 @@ class Movie(db.Model):
 with app.app_context():
     db.create_all()
 
+class MovieForm(FlaskForm):
+
+    rating = StringField("Your rating our of 10 e.g. 7.2 ", validators=[DataRequired()])
+    review = StringField("Your review", validators=[DataRequired()])
+    submit = SubmitField("Done")
+
 # new_movie = Movie(
 #     title="Phone Booth",
 #     year=2002,
@@ -73,6 +80,9 @@ with app.app_context():
 #     db.session.add(second_movie)
 #     db.session.commit()
 
+
+
+
 @app.route("/")
 def home():
     result = db.session.execute(db.select(Movie))
@@ -80,6 +90,31 @@ def home():
 
     return render_template("index.html", movies=all_movies)
 
+
+@app.route("/edit", methods=["GET", "POST"])
+def edit():
+    movie_id = request.args.get('id')
+    movie_selected = db.get_or_404(Movie, movie_id)
+    edit_form = MovieForm()
+
+    if edit_form.validate_on_submit():
+        # print(edit_form.review.data)
+        movie_selected.rating=float(edit_form.rating.data)
+        movie_selected.review=edit_form.review.data
+        db.session.commit()
+        return redirect(url_for('home'))
+
+    edit_form.rating.data=movie_selected.rating
+    edit_form.review.data=movie_selected.review
+    return render_template('edit.html', form=edit_form ,movie=movie_selected)
+
+@app.route("/delete")
+def delete_movie():
+    movie_id = request.args.get('id')
+    movie_selected = db.get_or_404(Movie, movie_id)
+    db.session.delete(movie_selected)
+    db.session.commit()
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
