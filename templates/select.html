@@ -5,10 +5,15 @@
 {% block content %}
 <div class="container">
     <h1 class="heading">Select Movie</h1>
+
+    {% if list %}
     {% for movie in list %}
   <p>
-    <a href="#"> {{ movie.title }} - {{movie.release_date}}</a>
+    <a href="{{url_for('select_movie', id=movie.id)}}"> {{ movie.title }} - {{movie.release_date}}</a>
   </p>
     {% endfor %}
+    {% else %}
+    new
+    {% endif %}
 </div>
 {% endblock %}

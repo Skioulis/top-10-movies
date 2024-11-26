@@ -15,7 +15,9 @@ from dotenv import load_dotenv
 
 load_dotenv(".env")
 MOVIE_DB_URL = "https://api.themoviedb.org/3/search/movie"
-
+SELECT_URL = "https://api.themoviedb.org/3/movie"
+MOVIE_DB_IMAGE_URL = "https://image.tmdb.org/t/p/w500"
+bearer_token = os.getenv("movie_db_read_access_token")
 
 
 '''
@@ -34,7 +36,7 @@ This will install the packages from requirements.txt for this project.
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '8BYkEfBA6O6donzWlSihBXox7C0sKR6b'
 Bootstrap5(app)
-
+movie_api_key = os.getenv('movie_db_api_key')
 # CREATE DB
 class Base(DeclarativeBase):
     pass
@@ -127,7 +129,7 @@ def add_movie():
     add_form = MovieAddForm()
     movie_list = []
     if add_form.validate_on_submit():
-        movie_api_key = os.getenv('movie_db_api_key')
+
         params = {
             "api_key" : movie_api_key,
             "query" : add_form.title.data
@@ -135,8 +137,37 @@ def add_movie():
         response = requests.get(url=MOVIE_DB_URL, params=params).json()
 
         movie_list = response['results']
+
         return  render_template('select.html', list=movie_list)
     return render_template('add.html', form=add_form)
+
+@app.route("/select")
+def select_movie():
+    movie_id = request.args.get('id')
+
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {bearer_token}"
+    }
+    params = {
+        "api_key": movie_api_key,
+    }
+    edit_form=MovieEditForm()
+    data = requests.get(url=f"{SELECT_URL}/{movie_id}", params=params).json()
+
+    movie_to_add = Movie(
+        title = data['title'],
+        year = data['release_date'].split('-')[0],
+        description = data['overview'],
+        rating = 0,
+        review = "To be reviewed",
+        img_url= f"{MOVIE_DB_IMAGE_URL}{data['poster_path']}"
+
+    )
+    db.session.add(movie_to_add)
+    db.session.commit()
+    print(movie_to_add.id)
+    return redirect(url_for('edit',form= edit_form, id=movie_to_add.id))
 
 if __name__ == '__main__':
     app.run(debug=True)
